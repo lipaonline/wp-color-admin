@@ -1,0 +1,36 @@
+.ctwp-settings .ctwp-rule {
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	padding: 12px 16px;
+	margin: 12px 0;
+	border-radius: 4px;
+}
+
+.ctwp-settings .ctwp-rule legend {
+	padding: 0 8px;
+}
+
+.ctwp-settings .ctwp-rule legend code,
+.ctwp-settings h2 code {
+	font-size: 12px;
+	opacity: 0.65;
+	font-weight: normal;
+}
+
+.ctwp-settings .ctwp-rule-body {
+	margin-top: 8px;
+}
+
+.ctwp-settings table.ctwp-terms {
+	max-width: 520px;
+	margin-top: 8px;
+}
+
+.ctwp-settings table.ctwp-terms td:first-child {
+	width: 55%;
+}
+
+.ctwp-settings .ctwp-acf-row .description {
+	margin-left: 8px;
+	font-style: italic;
+}
