@@ -9,8 +9,10 @@ require_once CTWP_DIR . 'includes/class-ctwp-admin-filters.php';
 
 class CTWP_Plugin {
 
-	const OPTION_KEY         = 'ctwp_settings';
-	const DEFAULT_PASTEL_MIX = 0.78;
+	const OPTION_KEY          = 'ctwp_settings';
+	const DEFAULT_PASTEL_MIX  = 0.78;
+	const TEMPLATE_PSEUDO_TAX = '_wp_page_template';
+	const TEMPLATE_DEFAULT    = 'default';
 
 	private static $instance;
 
@@ -30,6 +32,33 @@ class CTWP_Plugin {
 	public static function get_rules() {
 		$opt = get_option( self::OPTION_KEY, array() );
 		return ( isset( $opt['rules'] ) && is_array( $opt['rules'] ) ) ? $opt['rules'] : array();
+	}
+
+	public static function is_template_rule( $rule ) {
+		return isset( $rule['taxonomy'] ) && $rule['taxonomy'] === self::TEMPLATE_PSEUDO_TAX;
+	}
+
+	public static function get_post_type_templates( $post_type ) {
+		$theme = wp_get_theme();
+		if ( ! $theme ) {
+			return array();
+		}
+		$templates = $theme->get_page_templates( null, $post_type );
+		if ( ! is_array( $templates ) ) {
+			$templates = array();
+		}
+		return array_merge(
+			array( self::TEMPLATE_DEFAULT => __( 'Default template', 'color-the-wp' ) ),
+			$templates
+		);
+	}
+
+	public static function get_post_template_key( $post_id ) {
+		$slug = get_page_template_slug( $post_id );
+		if ( ! $slug ) {
+			return self::TEMPLATE_DEFAULT;
+		}
+		return $slug;
 	}
 
 	public static function get_pastel_mix() {

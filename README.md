@@ -9,13 +9,14 @@ Built for sites where you manage dozens (or hundreds) of pages or custom post ty
 ## Features
 
 - **Row coloring** on any admin list (pages, posts, custom post types) based on the terms attached to each post.
-- **Filter dropdown** in the admin list, per taxonomy.
-- **Edit-screen banner** showing which terms the current post belongs to, in the matching color.
-- **Two color sources per rule:**
+- **Page-template coloring** — color rows by the native WordPress `_wp_page_template` meta. No taxonomy needed.
+- **Filter dropdown** in the admin list, per taxonomy or per page template.
+- **Edit-screen banner** showing which terms (or which template) the current post belongs to, in the matching color.
+- **Two color sources per taxonomy rule:**
   - **Direct** — pick a color per term in the plugin settings (WP color picker).
   - **ACF** — read the color from an ACF field attached to the taxonomy (an ACF Color Picker field works best).
 - **Auto-pastelization** — any saturated color gets mixed with white at a configurable intensity, so text stays readable. Tunable from `0` (raw color) to `1` (pure white). Default: `0.78`.
-- **Auto-discovery** — no hardcoded post types or taxonomies. The plugin lists every `show_ui` post type × taxonomy combo on your site.
+- **Auto-discovery** — no hardcoded post types, taxonomies, or templates. The plugin lists every `show_ui` post type × taxonomy combo, plus any page templates declared in your theme.
 
 ## Installation
 
@@ -39,6 +40,15 @@ Each term of the taxonomy gets a WordPress color picker. Stored in the plugin's 
 The plugin reads `get_field( <slug>, $term )` for each term. Falls back to `get_term_meta()` if ACF isn't installed.
 
 Use case: editorial teams who want to manage colors directly on each term (Posts → Taxonomies → Edit term → Color field). Requires an ACF field group attached to the taxonomy, with a field of type *Color Picker*.
+
+## Page templates
+
+If your theme declares custom page templates (with the `Template Name:` header), the plugin auto-detects them and shows a dedicated **Page Template** section in the settings for each affected post type. You can:
+
+- Pick a color per template (including the implicit "Default template").
+- Color list rows by template, show a template banner on the edit screen, and add a "filter by template" dropdown to the admin list — same toggles as taxonomy rules.
+
+Filtering uses the URL parameter `?ctwp_tpl=<template-file.php>` and a `meta_query` against `_wp_page_template`. The "Default template" filter matches posts with no template assigned (NOT EXISTS or empty).
 
 ## Pastel intensity
 

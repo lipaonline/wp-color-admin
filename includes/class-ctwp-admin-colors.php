@@ -101,6 +101,22 @@ class CTWP_Admin_Colors {
 			if ( empty( $rule['banner'] ) ) {
 				continue;
 			}
+
+			if ( CTWP_Plugin::is_template_rule( $rule ) ) {
+				$slug      = CTWP_Plugin::get_post_template_key( $post->ID );
+				$templates = CTWP_Plugin::get_post_type_templates( $post->post_type );
+				$label     = isset( $templates[ $slug ] ) ? $templates[ $slug ] : $slug;
+				$raw       = isset( $rule['colors'][ $slug ] ) ? $rule['colors'][ $slug ] : '';
+				$color     = CTWP_Plugin::sanitize_css_color( $raw );
+				$tinted    = $color !== '' ? CTWP_Plugin::pastelize( $color ) : '';
+				$style     = $tinted !== '' ? 'background-color:' . $tinted . ';' : '';
+				echo '<div class="ctwp-edit-banner" style="' . esc_attr( $style ) . '">'
+					. '<span class="ctwp-bb-label">' . esc_html__( 'Template:', 'color-the-wp' ) . '</span>'
+					. '<strong>' . esc_html( $label ) . '</strong>'
+					. '</div>';
+				continue;
+			}
+
 			$terms = wp_get_object_terms( $post->ID, $rule['taxonomy'] );
 			if ( is_wp_error( $terms ) || empty( $terms ) ) {
 				continue;
@@ -122,6 +138,17 @@ class CTWP_Admin_Colors {
 
 	private function resolve_color_for_post( $post_id, $rules ) {
 		foreach ( $rules as $rule ) {
+			if ( CTWP_Plugin::is_template_rule( $rule ) ) {
+				$slug = CTWP_Plugin::get_post_template_key( $post_id );
+				$c    = isset( $rule['colors'][ $slug ] ) ? $rule['colors'][ $slug ] : '';
+				if ( $c !== '' ) {
+					return array(
+						'color' => $c,
+						'rule'  => $rule,
+					);
+				}
+				continue;
+			}
 			$terms = wp_get_object_terms( $post_id, $rule['taxonomy'] );
 			if ( is_wp_error( $terms ) || empty( $terms ) ) {
 				continue;

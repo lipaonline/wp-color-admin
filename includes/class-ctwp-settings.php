@@ -78,11 +78,20 @@ class CTWP_Settings {
 				'filter'    => ! empty( $rule['filter'] ),
 				'colors'    => array(),
 			);
+			$is_template = $clean['taxonomy'] === CTWP_Plugin::TEMPLATE_PSEUDO_TAX;
 			if ( ! empty( $rule['colors'] ) && is_array( $rule['colors'] ) ) {
-				foreach ( $rule['colors'] as $term_id => $color ) {
+				foreach ( $rule['colors'] as $key => $color ) {
 					$clean_color = CTWP_Plugin::sanitize_css_color( $color );
-					if ( $clean_color !== '' ) {
-						$clean['colors'][ (int) $term_id ] = $clean_color;
+					if ( $clean_color === '' ) {
+						continue;
+					}
+					if ( $is_template ) {
+						$clean_key = sanitize_text_field( $key );
+						if ( $clean_key !== '' ) {
+							$clean['colors'][ $clean_key ] = $clean_color;
+						}
+					} else {
+						$clean['colors'][ (int) $key ] = $clean_color;
 					}
 				}
 			}
@@ -145,7 +154,11 @@ class CTWP_Settings {
 							return true;
 						}
 					);
-					if ( empty( $taxes ) ) {
+
+					$theme_templates = CTWP_Plugin::get_post_type_templates( $pt->name );
+					$has_custom_tpl  = count( $theme_templates ) > 1;
+
+					if ( empty( $taxes ) && ! $has_custom_tpl ) {
 						continue;
 					}
 					?>
@@ -216,6 +229,49 @@ class CTWP_Settings {
 									}
 									?>
 								</div>
+							</div>
+						</fieldset>
+						<?php
+						$rule_index++;
+					}
+
+					if ( $has_custom_tpl ) {
+						$key      = $pt->name . '|' . CTWP_Plugin::TEMPLATE_PSEUDO_TAX;
+						$rule     = isset( $by_key[ $key ] ) ? $by_key[ $key ] : array();
+						$is_saved = ! empty( $rule );
+						$rows     = $is_saved ? ! empty( $rule['rows'] )   : false;
+						$banner   = $is_saved ? ! empty( $rule['banner'] ) : true;
+						$filter   = $is_saved ? ! empty( $rule['filter'] ) : true;
+						$colors   = isset( $rule['colors'] ) ? $rule['colors'] : array();
+						$name     = 'ctwp_settings[rules][' . $rule_index . ']';
+						?>
+						<fieldset class="ctwp-rule ctwp-rule-template" data-pt="<?php echo esc_attr( $pt->name ); ?>">
+							<legend>
+								<strong><?php esc_html_e( 'Page Template', 'color-the-wp' ); ?></strong>
+								<code>_wp_page_template</code>
+							</legend>
+							<input type="hidden" name="<?php echo esc_attr( $name ); ?>[post_type]" value="<?php echo esc_attr( $pt->name ); ?>">
+							<input type="hidden" name="<?php echo esc_attr( $name ); ?>[taxonomy]" value="<?php echo esc_attr( CTWP_Plugin::TEMPLATE_PSEUDO_TAX ); ?>">
+							<input type="hidden" name="<?php echo esc_attr( $name ); ?>[source]" value="direct">
+
+							<div class="ctwp-rule-body">
+								<p>
+									<label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[rows]" value="1" <?php checked( $rows ); ?>> <?php esc_html_e( 'Color list rows', 'color-the-wp' ); ?></label>
+									&nbsp;&nbsp;
+									<label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[banner]" value="1" <?php checked( $banner ); ?>> <?php esc_html_e( 'Show banner on edit screen', 'color-the-wp' ); ?></label>
+									&nbsp;&nbsp;
+									<label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[filter]" value="1" <?php checked( $filter ); ?>> <?php esc_html_e( 'Show filter dropdown in list', 'color-the-wp' ); ?></label>
+								</p>
+								<table class="widefat striped ctwp-terms"><tbody>
+								<?php foreach ( $theme_templates as $slug => $label ) :
+									$val = isset( $colors[ $slug ] ) ? $colors[ $slug ] : '';
+									?>
+									<tr>
+										<td><?php echo esc_html( $label ); ?> <code><?php echo esc_html( $slug ); ?></code></td>
+										<td><input type="text" class="ctwp-color" name="<?php echo esc_attr( $name ); ?>[colors][<?php echo esc_attr( $slug ); ?>]" value="<?php echo esc_attr( $val ); ?>"></td>
+									</tr>
+								<?php endforeach; ?>
+								</tbody></table>
 							</div>
 						</fieldset>
 						<?php

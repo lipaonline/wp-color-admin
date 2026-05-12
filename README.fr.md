@@ -9,13 +9,14 @@ Conçue pour les sites qui gèrent des dizaines (ou centaines) de pages ou de cu
 ## Fonctionnalités
 
 - **Coloration des lignes** dans n'importe quelle liste admin (pages, articles, CPT) selon les termes assignés au post.
-- **Dropdown de filtre** dans la liste admin, par taxonomie.
-- **Bandeau sur l'écran d'édition** indiquant les termes du post, avec la couleur associée.
-- **Deux sources de couleur par règle :**
+- **Coloration par template de page** — colore selon la méta WordPress native `_wp_page_template`. Pas besoin de créer une taxonomie.
+- **Dropdown de filtre** dans la liste admin, par taxonomie ou par template de page.
+- **Bandeau sur l'écran d'édition** indiquant les termes (ou le template) du post, avec la couleur associée.
+- **Deux sources de couleur par règle de taxonomie :**
   - **Direct** — un color-picker WP par terme, défini dans les réglages du plugin.
   - **ACF** — lecture de la couleur depuis un champ ACF attaché à la taxonomie (un champ ACF Color Picker fonctionne très bien).
 - **Pastelisation automatique** — toute couleur saturée est mélangée avec du blanc selon une intensité configurable, donc le texte reste lisible. Réglable de `0` (couleur brute) à `1` (blanc pur). Défaut : `0.78`.
-- **Auto-découverte** — aucun post type ou taxonomie codé en dur. L'extension liste toutes les combinaisons (post_type × taxonomie) `show_ui` du site.
+- **Auto-découverte** — aucun post type, taxonomie ou template codé en dur. L'extension liste toutes les combinaisons (post_type × taxonomie) `show_ui` du site, plus les templates déclarés par le thème.
 
 ## Installation
 
@@ -39,6 +40,15 @@ Chaque terme de la taxonomie obtient un color-picker WP. Stocké dans l'option `
 L'extension lit `get_field( <slug>, $term )` pour chaque terme. Fallback vers `get_term_meta()` si ACF n'est pas installé.
 
 Cas d'usage : équipes éditoriales qui gèrent les couleurs directement sur chaque terme (Articles → Taxonomies → Modifier le terme → Champ couleur). Nécessite un groupe de champs ACF rattaché à la taxonomie, avec un champ de type *Color Picker*.
+
+## Templates de page
+
+Si ton thème déclare des templates personnalisés (via l'en-tête `Template Name:`), l'extension les détecte automatiquement et affiche une section dédiée **Page Template** dans les réglages, pour chaque post type concerné. Tu peux :
+
+- Choisir une couleur par template (y compris pour le "Template par défaut" implicite).
+- Activer la coloration des lignes, le bandeau d'édition et le dropdown de filtre par template — mêmes toggles que pour les règles de taxonomie.
+
+Le filtre passe par le paramètre d'URL `?ctwp_tpl=<template-file.php>` et un `meta_query` sur `_wp_page_template`. Le filtre "Template par défaut" matche les posts sans template assigné (NOT EXISTS ou vide).
 
 ## Intensité du pastel
 
