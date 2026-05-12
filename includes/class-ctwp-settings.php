@@ -117,7 +117,15 @@ class CTWP_Settings {
 		}
 
 		$post_types = get_post_types( array( 'show_ui' => true ), 'objects' );
-		unset( $post_types['attachment'] );
+		/**
+		 * Filter the list of post type slugs excluded from the settings page.
+		 *
+		 * @param array $excluded Post type slugs to hide.
+		 */
+		$excluded_pt = apply_filters( 'ctwp_excluded_post_types', array( 'attachment' ) );
+		foreach ( $excluded_pt as $slug ) {
+			unset( $post_types[ $slug ] );
+		}
 		?>
 		<div class="wrap ctwp-settings">
 			<h1><?php esc_html_e( 'Color the WP', 'color-the-wp' ); ?></h1>
@@ -142,16 +150,24 @@ class CTWP_Settings {
 				<?php
 				$rule_index = 0;
 				foreach ( $post_types as $pt ) {
-					$taxes = array_filter(
+					/**
+					 * Filter the taxonomy slugs excluded from the settings page.
+					 *
+					 * @param array  $excluded  Taxonomy slugs to hide.
+					 * @param string $post_type Post type being rendered.
+					 */
+					$excluded_tx = apply_filters(
+						'ctwp_excluded_taxonomies',
+						array( 'post_format', 'nav_menu', 'link_category' ),
+						$pt->name
+					);
+					$taxes       = array_filter(
 						get_object_taxonomies( $pt->name, 'objects' ),
-						static function ( $tx ) {
+						static function ( $tx ) use ( $excluded_tx ) {
 							if ( empty( $tx->show_ui ) ) {
 								return false;
 							}
-							if ( $tx->name === 'post_format' || $tx->name === 'nav_menu' || $tx->name === 'link_category' ) {
-								return false;
-							}
-							return true;
+							return ! in_array( $tx->name, $excluded_tx, true );
 						}
 					);
 
@@ -282,6 +298,15 @@ class CTWP_Settings {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<?php
+			/**
+			 * Fires after the settings form is rendered, inside the wrap.
+			 *
+			 * Use it to inject extra sections, debug info, or links to docs.
+			 */
+			do_action( 'ctwp_render_settings_after' );
+			?>
 		</div>
 		<?php
 	}

@@ -70,11 +70,17 @@ class CTWP_Admin_Colors {
 				continue;
 			}
 			$tinted = CTWP_Plugin::pastelize( $color );
-			$css   .= sprintf(
-				"#post-%1\$d, #post-%1\$d > * { background-color: %2\$s !important; }\n",
-				(int) $post->ID,
-				$tinted
-			);
+			/**
+			 * Filter the CSS selector pattern used to color a list row.
+			 *
+			 * Use %1$d as the post ID placeholder. Defaults to targeting the row
+			 * and its direct children: `#post-%1$d, #post-%1$d > *`.
+			 *
+			 * @param string  $selector sprintf pattern.
+			 * @param WP_Post $post     Current post.
+			 */
+			$selector = apply_filters( 'ctwp_row_selector', '#post-%1$d, #post-%1$d > *', $post );
+			$css     .= sprintf( $selector . " { background-color: %2\$s !important; }\n", (int) $post->ID, $tinted );
 		}
 		if ( $css !== '' ) {
 			echo "<style id=\"ctwp-list-colors\">\n" . $css . "</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -110,10 +116,11 @@ class CTWP_Admin_Colors {
 				$color     = CTWP_Plugin::sanitize_css_color( $raw );
 				$tinted    = $color !== '' ? CTWP_Plugin::pastelize( $color ) : '';
 				$style     = $tinted !== '' ? 'background-color:' . $tinted . ';' : '';
-				echo '<div class="ctwp-edit-banner" style="' . esc_attr( $style ) . '">'
+				$html      = '<div class="ctwp-edit-banner" style="' . esc_attr( $style ) . '">'
 					. '<span class="ctwp-bb-label">' . esc_html__( 'Template:', 'color-the-wp' ) . '</span>'
 					. '<strong>' . esc_html( $label ) . '</strong>'
 					. '</div>';
+				echo $this->filter_banner_html( $html, array( 'post' => $post, 'rule' => $rule, 'label' => $label, 'color' => $tinted ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				continue;
 			}
 
@@ -128,24 +135,37 @@ class CTWP_Admin_Colors {
 				$color  = CTWP_Plugin::sanitize_css_color( $this->color_for_term( $term, $rule ) );
 				$tinted = $color !== '' ? CTWP_Plugin::pastelize( $color ) : '';
 				$style  = $tinted !== '' ? 'background-color:' . $tinted . ';' : '';
-				echo '<div class="ctwp-edit-banner" style="' . esc_attr( $style ) . '">'
+				$html   = '<div class="ctwp-edit-banner" style="' . esc_attr( $style ) . '">'
 					. '<span class="ctwp-bb-label">' . esc_html( $tx_label ) . ' :</span>'
 					. '<strong>' . esc_html( $term->name ) . '</strong>'
 					. '</div>';
+				echo $this->filter_banner_html( $html, array( 'post' => $post, 'rule' => $rule, 'term' => $term, 'label' => $term->name, 'color' => $tinted ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		}
 	}
 
+	private function filter_banner_html( $html, $context ) {
+		/**
+		 * Filter the edit-screen banner HTML before output.
+		 *
+		 * @param string $html    The full banner markup (already escaped).
+		 * @param array  $context Keys: post, rule, optional term, label, color.
+		 */
+		return apply_filters( 'ctwp_banner_html', $html, $context );
+	}
+
 	private function resolve_color_for_post( $post_id, $rules ) {
+		$result = null;
 		foreach ( $rules as $rule ) {
 			if ( CTWP_Plugin::is_template_rule( $rule ) ) {
 				$slug = CTWP_Plugin::get_post_template_key( $post_id );
 				$c    = isset( $rule['colors'][ $slug ] ) ? $rule['colors'][ $slug ] : '';
 				if ( $c !== '' ) {
-					return array(
+					$result = array(
 						'color' => $c,
 						'rule'  => $rule,
 					);
+					break;
 				}
 				continue;
 			}
@@ -156,33 +176,52 @@ class CTWP_Admin_Colors {
 			foreach ( $terms as $term ) {
 				$c = $this->color_for_term( $term, $rule );
 				if ( $c !== '' ) {
-					return array(
+					$result = array(
 						'color' => $c,
 						'term'  => $term,
 						'rule'  => $rule,
 					);
+					break 2;
 				}
 			}
 		}
-		return null;
+		/**
+		 * Filter the resolved color for a post.
+		 *
+		 * Return null to skip coloring, or an array with at least a 'color' key.
+		 *
+		 * @param array|null $result  Resolved data (color, optional term, optional rule), or null.
+		 * @param int        $post_id Post ID.
+		 * @param array      $rules   Rules considered for resolution.
+		 */
+		return apply_filters( 'ctwp_resolved_color', $result, $post_id, $rules );
 	}
 
 	private function color_for_term( $term, $rule ) {
+		$color = '';
 		if ( $rule['source'] === 'direct' ) {
-			return isset( $rule['colors'][ $term->term_id ] ) ? $rule['colors'][ $term->term_id ] : '';
-		}
-		if ( $rule['source'] === 'acf' && ! empty( $rule['acf_field'] ) ) {
+			$color = isset( $rule['colors'][ $term->term_id ] ) ? $rule['colors'][ $term->term_id ] : '';
+		} elseif ( $rule['source'] === 'acf' && ! empty( $rule['acf_field'] ) ) {
 			if ( function_exists( 'get_field' ) ) {
 				$val = get_field( $rule['acf_field'], $term );
 				if ( is_string( $val ) && $val !== '' ) {
-					return $val;
+					$color = $val;
 				}
 			}
-			$val = get_term_meta( $term->term_id, $rule['acf_field'], true );
-			if ( is_string( $val ) && $val !== '' ) {
-				return $val;
+			if ( $color === '' ) {
+				$val = get_term_meta( $term->term_id, $rule['acf_field'], true );
+				if ( is_string( $val ) && $val !== '' ) {
+					$color = $val;
+				}
 			}
 		}
-		return '';
+		/**
+		 * Filter the color resolved for a term.
+		 *
+		 * @param string  $color Resolved color (may be empty).
+		 * @param WP_Term $term  Term object.
+		 * @param array   $rule  Rule the term belongs to.
+		 */
+		return apply_filters( 'ctwp_color_for_term', $color, $term, $rule );
 	}
 }

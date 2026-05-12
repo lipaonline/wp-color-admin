@@ -75,11 +75,41 @@ Si un post a des termes dans plusieurs taxonomies configurées, la première rè
 
 ## Hooks
 
-- `ctwp_settings` (option) — la config stockée.
-- `CTWP_Plugin::pastelize( $color, $mix = null )` — helper statique public.
-- `CTWP_Plugin::get_rules()` — helper statique public qui retourne le tableau des règles brut.
+### Filtres
 
-Aucun filtre n'est exposé pour l'instant ; si tu en as besoin, ouvre une issue.
+| Hook | Signature | Usage |
+|---|---|---|
+| `ctwp_rules` | `array $rules` | Filtrer la liste des règles à la lecture. |
+| `ctwp_pastel_mix` | `float $mix` | Outrepasser l'intensité du pastel configurée (0..1). |
+| `ctwp_pastelize_color` | `string $hex, string $original, float $mix` | Remplacer entièrement l'algorithme de pastelisation. |
+| `ctwp_color_for_term` | `string $color, WP_Term $term, array $rule` | Personnaliser la couleur d'un terme (par ex. lire depuis une autre méta). |
+| `ctwp_post_template_key` | `string $slug, int $post_id` | Mapper un post sur une "identité template" différente (location rules Beaver Themer, Elementor, etc.). |
+| `ctwp_resolved_color` | `array\|null $result, int $post_id, array $rules` | Override final de la couleur résolue pour un post. Retourner `null` pour skip. |
+| `ctwp_excluded_taxonomies` | `array $excluded, string $post_type` | Filtrer les slugs de taxonomie masqués de la page de réglages. Défaut : `post_format`, `nav_menu`, `link_category`. |
+| `ctwp_excluded_post_types` | `array $excluded` | Filtrer les slugs de post type masqués. Défaut : `attachment`. |
+| `ctwp_post_type_templates` | `array $templates, string $post_type` | Ajouter/retirer des templates listés pour un post type. |
+| `ctwp_row_selector` | `string $sprintf_pattern, WP_Post $post` | Outrepasser le sélecteur CSS d'une ligne. Défaut : `#post-%1$d, #post-%1$d > *`. |
+| `ctwp_banner_html` | `string $html, array $context` | Remplacer le markup du bandeau. Context : `post`, `rule`, optionnel `term`, `label`, `color`. |
+
+### Actions
+
+| Hook | Quand |
+|---|---|
+| `ctwp_render_settings_after` | Après le formulaire de réglages, dans le wrap. Injecter du contenu additionnel ici. |
+
+### Hooks WordPress core utiles
+
+- `update_option_ctwp_settings` / `updated_option` — réagir à la sauvegarde des réglages.
+- `default_option_ctwp_settings` — fournir une valeur par défaut si l'option n'est pas définie.
+
+### Helpers publics
+
+- `CTWP_Plugin::get_rules()` — retourne le tableau des règles.
+- `CTWP_Plugin::pastelize( $color, $mix = null )` — pastelise une couleur hex/rgb.
+- `CTWP_Plugin::get_pastel_mix()` — intensité du pastel courante (0..1).
+- `CTWP_Plugin::get_post_type_templates( $post_type )` — `[ slug => label ]` incluant default.
+- `CTWP_Plugin::get_post_template_key( $post_id )` — slug du template ou `'default'`.
+- `CTWP_Plugin::is_template_rule( $rule )` — vérifie si une règle cible `_wp_page_template`.
 
 ## Prérequis
 

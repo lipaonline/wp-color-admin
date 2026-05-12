@@ -30,8 +30,15 @@ class CTWP_Plugin {
 	}
 
 	public static function get_rules() {
-		$opt = get_option( self::OPTION_KEY, array() );
-		return ( isset( $opt['rules'] ) && is_array( $opt['rules'] ) ) ? $opt['rules'] : array();
+		$opt   = get_option( self::OPTION_KEY, array() );
+		$rules = ( isset( $opt['rules'] ) && is_array( $opt['rules'] ) ) ? $opt['rules'] : array();
+		/**
+		 * Filter the list of color rules.
+		 *
+		 * @param array $rules Array of rules. Each rule has post_type, taxonomy, source,
+		 *                     acf_field, rows, banner, filter, colors.
+		 */
+		return apply_filters( 'ctwp_rules', $rules );
 	}
 
 	public static function is_template_rule( $rule ) {
@@ -40,33 +47,49 @@ class CTWP_Plugin {
 
 	public static function get_post_type_templates( $post_type ) {
 		$theme = wp_get_theme();
-		if ( ! $theme ) {
-			return array();
-		}
-		$templates = $theme->get_page_templates( null, $post_type );
+		$templates = $theme ? $theme->get_page_templates( null, $post_type ) : array();
 		if ( ! is_array( $templates ) ) {
 			$templates = array();
 		}
-		return array_merge(
+		$templates = array_merge(
 			array( self::TEMPLATE_DEFAULT => __( 'Default template', 'color-the-wp' ) ),
 			$templates
 		);
+		/**
+		 * Filter the list of templates shown for a post type.
+		 *
+		 * @param array  $templates Map of slug => human label. Includes 'default'.
+		 * @param string $post_type Post type slug.
+		 */
+		return apply_filters( 'ctwp_post_type_templates', $templates, $post_type );
 	}
 
 	public static function get_post_template_key( $post_id ) {
 		$slug = get_page_template_slug( $post_id );
-		if ( ! $slug ) {
-			return self::TEMPLATE_DEFAULT;
-		}
-		return $slug;
+		$key  = $slug ? $slug : self::TEMPLATE_DEFAULT;
+		/**
+		 * Filter the template key resolved for a given post.
+		 *
+		 * Useful to map to alternative sources (Beaver Themer location rules,
+		 * Elementor templates, custom logic).
+		 *
+		 * @param string $key     Template slug, or 'default'.
+		 * @param int    $post_id Post ID.
+		 */
+		return apply_filters( 'ctwp_post_template_key', $key, $post_id );
 	}
 
 	public static function get_pastel_mix() {
 		$opt = get_option( self::OPTION_KEY, array() );
-		if ( isset( $opt['pastel_mix'] ) && is_numeric( $opt['pastel_mix'] ) ) {
-			return max( 0.0, min( 1.0, (float) $opt['pastel_mix'] ) );
-		}
-		return self::DEFAULT_PASTEL_MIX;
+		$mix = ( isset( $opt['pastel_mix'] ) && is_numeric( $opt['pastel_mix'] ) )
+			? max( 0.0, min( 1.0, (float) $opt['pastel_mix'] ) )
+			: self::DEFAULT_PASTEL_MIX;
+		/**
+		 * Filter the pastel intensity used for color tinting.
+		 *
+		 * @param float $mix Value between 0 (raw color) and 1 (pure white).
+		 */
+		return (float) apply_filters( 'ctwp_pastel_mix', $mix );
 	}
 
 	public static function pastelize( $color, $mix = null ) {
@@ -102,7 +125,15 @@ class CTWP_Plugin {
 		}
 		unset( $c );
 
-		return sprintf( '#%02x%02x%02x', $rgb[0], $rgb[1], $rgb[2] );
+		$hex = sprintf( '#%02x%02x%02x', $rgb[0], $rgb[1], $rgb[2] );
+		/**
+		 * Filter the final pastelized color string.
+		 *
+		 * @param string $hex      Pastelized hex color.
+		 * @param string $original Original color passed in.
+		 * @param float  $mix      Mix factor applied.
+		 */
+		return apply_filters( 'ctwp_pastelize_color', $hex, $color, $mix );
 	}
 
 	public static function sanitize_css_color( $val ) {
