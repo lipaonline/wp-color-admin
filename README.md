@@ -68,6 +68,10 @@ If a post belongs to terms in multiple configured taxonomies, the first rule (in
 
 - **Polylang** — the plugin filters out `post_translations` (Polylang's `show_ui=false` internal taxonomy) so the settings page stays clean. The `language` taxonomy is still shown because Polylang declares it visible.
 - **Custom taxonomies registered with `show_ui=false`** are hidden from the settings page on purpose.
+- **Beaver Themer** — works without any extra setup:
+  - The `fl-theme-layout` post type is auto-detected, and its taxonomies (`fl-theme-layout-type`, `fl-theme-layout-location`) can be used for coloring.
+  - Themer Layouts that get registered as page templates (via `theme_page_templates`) appear in the Page Template section like regular theme templates.
+  - **Caveat**: Beaver Themer location rules ("All Singular Posts", "Pages with category X", etc.) are *not* reflected. The plugin only sees the explicit per-page template selection stored in `_wp_page_template`.
 
 ## Hooks
 
